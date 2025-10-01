@@ -1,11 +1,11 @@
 {
   "version": 2,
   "rewrites": [
-    { "source": "/empire", "destination": "/api/embed" }
+    { "source": "/empire", "destination": "/api/empire" }
   ],
   "headers": [
     {
-      "source": "/card-entry.html",
+      "source": "/empireGate.html",
       "headers": [
         { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate" },
         { "key": "Pragma", "value": "no-cache" },
