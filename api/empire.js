@@ -1,6 +1,5 @@
 import fs from "fs";
 import path from "path";
-import fetch from "node-fetch";
 
 export default async function handler(req, res) {
   const { token } = req.query;
