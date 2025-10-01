@@ -1,7 +1,7 @@
 {
   "version": 2,
-  "rewrites": [
-    { "source": "/empire", "destination": "/empireGate.html" }
+  "routes": [
+    { "src": "/empire", "dest": "/api/embed" }
   ],
   "headers": [
     {
