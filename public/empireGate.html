@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Card Entry</title>
+  <style>
+    .valid { border: 2px solid green; }
+    .invalid { border: 2px solid red; }
+    .brand { margin-left: 8px; }
+  </style>
+</head>
+<body>
+  <label>
+    Card Number:
+    <input id="card-pan" type="text" autocomplete="off" placeholder="•••• •••• •••• ••••">
+    <span id="card-brand"></span>
+  </label>
+  <br><br>
+  <label>
+    Expiry:
+    <input id="expiry" type="text" placeholder="MM/YY">
+  </label>
+  <br><br>
+  <label>
+    CVV:
+    <input id="cvv" type="password" maxlength="4">
+  </label>
+  <br><br>
+  <button id="submit">Tokenize</button>
+
+  <!-- Secure JS import -->
+  <script src="/empireGate.js" defer></script>
+</body>
+</html>
