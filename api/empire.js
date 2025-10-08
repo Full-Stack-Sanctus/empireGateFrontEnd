@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   // Ask your gateway server to verify
   const response = await fetch("https://empiregate-api.onrender.com/api/merchant/me", {
     method: "GET",
-    headers: { "Authorization": Bearer { token } },
+    headers: { Authorization: `Bearer ${token}` },
   });
 
   if (!response.ok) return res.status(403).send("Invalid token");
