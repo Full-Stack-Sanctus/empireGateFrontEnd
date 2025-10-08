@@ -30,7 +30,7 @@ export default async function handler(req, res) {
   );
 
   // Serve static HTML
-  const filePath = path.join(process.cwd(), "public", "empireGate.html");
+  const filePath = path.join(process.cwd(), "public", `empireGate.html?origin=${allowedDomain}`);
   const file = fs.readFileSync(filePath, "utf8");
   res.setHeader("Content-Type", "text/html");
   return res.status(200).send(file);
