@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 
+
 export default async function handler(req, res) {
   const { token } = req.query;
 
@@ -12,7 +13,15 @@ export default async function handler(req, res) {
 
   if (!response.ok) return res.status(403).send("Invalid token");
 
-  const { allowedDomain } = await response.json();
+  const merchant = await response.json();
+  const merchantId = merchant.merchantId;
+
+  if (!merchantId) {
+    return res.status(400).send("Invalid merchant payload");
+  }
+
+  const allowedDomain = merchant.allowedDomain;
+
 
   // Apply CSP dynamically
   res.setHeader(
