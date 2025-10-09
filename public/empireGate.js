@@ -82,8 +82,21 @@ const submitBtn = document.querySelector('#submit');
 
 const parentOrigin = window.ALLOWED_DOMAIN;
 
+// --- State ---
+let cardToken = null;
+let tokenizing = false;
+let merchantId = null;
 
-// --- UI helpers ---
+// Button should start disabled until token is ready
+submitBtn.disabled = true;
+
+// --- Receive merchant ID from parent ---
+window.addEventListener("message", (event) => {
+  if (event.origin !== parentOrigin) return;
+  if (event.data?.merchantId) merchantId = event.data.merchantId;
+});
+
+// --- Helpers ---
 function showBrand(brand) {
   brandEl.className = 'brand ' + (brand || 'unknown');
   brandEl.textContent = brand ? brand.toUpperCase() : '';
@@ -98,104 +111,108 @@ function validateAll() {
   const panDigits = panInput.value.replace(/\D/g, '');
   const binInfo = detectBinInfo(panInput.value);
   const brand = binInfo ? binInfo.brand : 'unknown';
-  const panOk = panDigits.length >= 12 && luhnCheck(panDigits); // require 12+ digits
+  const panOk = panDigits.length >= 12 && luhnCheck(panDigits);
   const expiryOk = isExpiryValid(expiryInput.value);
   const cvvLen = (brand === 'amex') ? 4 : 3;
   const cvvOk = /^\d+$/.test(cvvInput.value) && (cvvInput.value.length === cvvLen);
   setValidity(panInput, panOk);
   setValidity(expiryInput, expiryOk);
   setValidity(cvvInput, cvvOk);
-  submitBtn.disabled = !(panOk && expiryOk && cvvOk);
   return { panOk, expiryOk, cvvOk, brand, binInfo };
 }
 
-// --- Input wiring ---
-// Keep simple formatting: format after typing ends (avoid moving caret complexity here)
-let formatTimeout;
-panInput.addEventListener('input', (e) => {
-  clearTimeout(formatTimeout);
-  const raw = e.target.value;
-  const binInfo = detectBinInfo(raw);
-  const brand = binInfo ? binInfo.brand : 'unknown';
-  showBrand(brand);
+// --- Auto-tokenize when all valid ---
+async function maybeAutoTokenize() {
+  const { panOk, expiryOk, cvvOk } = validateAll();
+  if (panOk && expiryOk && cvvOk && !cardToken && !tokenizing) {
+    tokenizing = true;
+    submitBtn.textContent = 'Tokenizing…';
+    submitBtn.disabled = true;
 
-  // Delay formatting to avoid janky caret movement while typing
-  formatTimeout = setTimeout(() => {
-    const formatted = formatPanByBrand(raw, brand);
-    e.target.value = formatted;
-  }, 200);
+    try {
+      const panRaw = panInput.value;
+      const expiryRaw = expiryInput.value;
+      const cvvRaw = cvvInput.value;
 
-  validateAll();
-});
+      const data = await tokenizeCard({ pan: panRaw, cvv: cvvRaw, expiry: expiryRaw, merchantId });
+      cardToken = data.token;
 
-expiryInput.addEventListener('input', () => validateAll());
-cvvInput.addEventListener('input', () => validateAll());
+      // Notify parent window
+      window.parent.postMessage({
+        type: 'card_token',
+        token: data.token,
+        maskedPAN: data.masked_pan
+      }, parentOrigin);
 
-// --- Tokenize + postMessage ---
-async function tokenizeAndSendToParent({ pan, cvv, expiry }) {
-  const body = {
-    pan: pan.replace(/\s/g, ''), // raw PAN to tokenization endpoint only
-    cvv,
-    expiry
-  };
+      console.log('Auto-tokenized successfully:', data.masked_pan);
 
-  const resp = await fetch('https://api.example-gateway.com/tokenize', {
-    method: 'POST',
-    credentials: 'omit',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    },
-    body: JSON.stringify(body)
-  });
-
-  if (!resp.ok) {
-    // bubble up status text (do not include PAN in errors)
-    const txt = await resp.text().catch(()=>null);
-    throw new Error(txt || 'Tokenization failed');
+      // ✅ Enable the Buy button only after tokenization success
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Buy';
+    } catch (err) {
+      console.error('Tokenization failed:', err);
+      submitBtn.textContent = 'Retry';
+      submitBtn.disabled = true; // keep disabled until valid again
+    } finally {
+      tokenizing = false;
+    }
+  } else if (!panOk || !expiryOk || !cvvOk) {
+    // Invalid input again → reset token
+    cardToken = null;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Buy';
   }
-
-  const data = await resp.json(); // expected { token, masked_pan }
-  // Only send token & masked PAN to parent
-  window.parent.postMessage({
-    type: 'card_token',
-    token: data.token,
-    maskedPAN: data.masked_pan
-  }, parentOrigin);
 }
 
-// --- Submit handler ---
-submitBtn.addEventListener('click', async (ev) => {
-  ev.preventDefault();
-  submitBtn.disabled = true;
-  submitBtn.textContent = 'Tokenizing…';
+// --- Actual tokenization request ---
+async function tokenizeCard({ pan, cvv, expiry }) {
+  const resp = await fetch('https://api.example-gateway.com/tokenize', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({
+      pan: pan.replace(/\s/g, ''),
+      cvv,
+      expiry
+    })
+  });
+  if (!resp.ok) throw new Error('Tokenization failed');
+  return resp.json();
+}
 
-  // Collect and sanitize
-  const panRaw = panInput.value;
-  const expiryRaw = expiryInput.value;
-  const cvvRaw = cvvInput.value;
+// --- Input listeners ---
+panInput.addEventListener('input', maybeAutoTokenize);
+expiryInput.addEventListener('input', maybeAutoTokenize);
+cvvInput.addEventListener('input', maybeAutoTokenize);
+
+// --- Buy handler ---
+submitBtn.addEventListener('click', async (e) => {
+  e.preventDefault();
+  if (!cardToken) return alert('Card not tokenized yet');
+  if (!merchantId) return alert('Merchant ID missing');
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Processing…';
 
   try {
-    const { panOk, expiryOk, cvvOk } = validateAll();
-    if (!panOk || !expiryOk || !cvvOk) {
-      throw new Error('Please correct card details before submitting.');
-    }
+    const resp = await fetch(`${parentOrigin}/api/buy`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ merchantId, token: cardToken })
+    });
 
-    await tokenizeAndSendToParent({ pan: panRaw, cvv: cvvRaw, expiry: expiryRaw });
-    // optionally show a success UI (but do not reveal token or PAN)
-    submitBtn.textContent = 'Done';
+    if (!resp.ok) throw new Error('Purchase failed');
+    const data = await resp.json();
+    alert('Purchase successful!');
+    console.log('Buy result:', data);
   } catch (err) {
-    console.error(err);
-    alert('Payment error: ' + (err.message || 'Tokenization failed'));
-    submitBtn.textContent = 'Tokenize';
+    alert('Error: ' + err.message);
   } finally {
-    // re-enable after short delay
-    setTimeout(() => {
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Tokenize';
-    }, 800);
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Buy';
   }
 });
+
+
 
 // --- Prevent raw PAN leaks via postMessage or parent navigation ---
 // Listen for parent pings or commands only from expected origin
