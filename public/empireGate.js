@@ -1,12 +1,3 @@
-const urlParams = new URLSearchParams(window.location.search);
-const PARENT_ORIGIN = urlParams.get('origin');
-
-// Validate that this origin is actually allowed by your backend (optional fetch)
-if (!/^https:\/\/(merchant\.example\.com|partner\.example\.org)$/.test(PARENT_ORIGIN)) {
-  throw new Error("Unrecognized parent origin");
-}
-
-
 
 // empireGate.js
 // Assumes it's loaded inside an iframe served from your gateway domain (https://api.example-gateway.com).
@@ -89,6 +80,8 @@ const cvvInput = document.querySelector('#cvv');
 const brandEl = document.querySelector('#card-brand');
 const submitBtn = document.querySelector('#submit');
 
+const parentOrigin = window.ALLOWED_DOMAIN;
+
 
 // --- UI helpers ---
 function showBrand(brand) {
@@ -168,7 +161,7 @@ async function tokenizeAndSendToParent({ pan, cvv, expiry }) {
     type: 'card_token',
     token: data.token,
     maskedPAN: data.masked_pan
-  }, PARENT_ORIGIN);
+  }, parentOrigin);
 }
 
 // --- Submit handler ---
@@ -206,7 +199,17 @@ submitBtn.addEventListener('click', async (ev) => {
 
 // --- Prevent raw PAN leaks via postMessage or parent navigation ---
 // Listen for parent pings or commands only from expected origin
-window.addEventListener('message', (ev) => {
-  if (ev.origin !== PARENT_ORIGIN) return;
-  // handle any allowed commands (if you need)
+document.addEventListener("DOMContentLoaded", () => {
+  
+  console.log("Allowed parent origin:", parentOrigin);
+
+  // Example usage: only allow messages from that domain
+  window.addEventListener("message", (event) => {
+    if (event.origin !== parentOrigin) {
+      console.warn("Blocked message from unauthorized origin:", event.origin);
+      return;
+    }
+
+    console.log("Received valid message:", event.data);
+  });
 });

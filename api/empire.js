@@ -30,8 +30,16 @@ export default async function handler(req, res) {
   );
 
   // Serve static HTML
-  const filePath = path.join(process.cwd(), "public", `empireGate.html?origin=${allowedDomain}`);
-  const file = fs.readFileSync(filePath, "utf8");
+  const filePath = path.join(process.cwd(), "public", "empireGate.html");
+  
+  let html = fs.readFileSync(filePath, "utf8");
+
+    // Inject merchant-specific variable (optional)
+    html = html.replace(
+      "</head>",
+      `<script>window.ALLOWED_DOMAIN = "${allowedDomain}";</script></head>`
+    );
+    
   res.setHeader("Content-Type", "text/html");
   return res.status(200).send(file);
 }
