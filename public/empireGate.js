@@ -93,7 +93,7 @@ submitBtn.disabled = true;
 // --- Receive merchant ID from parent ---
 window.addEventListener("message", (event) => {
   if (event.origin !== parentOrigin) return;
-  if (event.data?.merchantId) merchantId = event.data.merchantId;
+  // if (event.data?.merchantId) merchantId = event.data.merchantId;
 });
 
 // --- Helpers ---
@@ -134,7 +134,7 @@ async function maybeAutoTokenize() {
       const expiryRaw = expiryInput.value;
       const cvvRaw = cvvInput.value;
 
-      const data = await tokenizeCard({ pan: panRaw, cvv: cvvRaw, expiry: expiryRaw, merchantId });
+      const data = await tokenizeCard({ pan: panRaw, cvv: cvvRaw, expiry: expiryRaw, parentOrigin });
       cardToken = data.token;
 
       // Notify parent window
@@ -166,7 +166,7 @@ async function maybeAutoTokenize() {
 
 // --- Actual tokenization request ---
 async function tokenizeCard({ pan, cvv, expiry }) {
-  const resp = await fetch('https://api.example-gateway.com/tokenize', {
+  const resp = await fetch('https://empiregate-api.onrender.com/api/cards/tokenize', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
     body: JSON.stringify({
@@ -194,7 +194,7 @@ submitBtn.addEventListener('click', async (e) => {
   submitBtn.textContent = 'Processing…';
 
   try {
-    const resp = await fetch(`${parentOrigin}/api/buy`, {
+    const resp = await fetch('https://empiregate-api.onrender.com/api/buy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ merchantId, token: cardToken })
