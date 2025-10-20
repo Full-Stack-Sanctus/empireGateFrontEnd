@@ -151,7 +151,7 @@ async function maybeAutoTokenize() {
       submitBtn.textContent = 'Buy';
     } catch (err) {
       console.error('Tokenization failed:', err);
-      submitBtn.textContent = 'Retry';
+      submitBtn.textContent = `Retry: ${err}`;
       submitBtn.disabled = true; // keep disabled until valid again
     } finally {
       tokenizing = false;
