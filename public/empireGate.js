@@ -165,19 +165,42 @@ async function maybeAutoTokenize() {
 }
 
 // --- Actual tokenization request ---
+// ✅ Helper to extract token from iframe URL query
+function getTokenFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("token");
+}
+
 async function tokenizeCard({ pan, cvv, expiry }) {
-  const resp = await fetch('https://empiregate-api.onrender.com/api/cards/tokenize', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+  const token = getTokenFromUrl(); // extract merchant's token from URL
+
+  if (!token) {
+    throw new Error("Missing token in iframe URL");
+  }
+
+  const resp = await fetch("https://empiregate-api.onrender.com/api/cards/tokenize", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    },
     body: JSON.stringify({
-      pan: pan.replace(/\s/g, ''),
+      pan: pan.replace(/\s/g, ""), // remove spaces
       cvv,
       expiry
     })
   });
-  if (!resp.ok) throw new Error('Tokenization failed');
+
+  if (!resp.ok) {
+    const errorText = await resp.text();
+    console.error("Tokenization failed:", errorText);
+    throw new Error(`Tokenization failed: ${resp.status}`);
+  }
+
   return resp.json();
 }
+
 
 // --- Input listeners ---
 panInput.addEventListener('input', maybeAutoTokenize);
