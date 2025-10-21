@@ -217,9 +217,14 @@ submitBtn.addEventListener('click', async (e) => {
   submitBtn.textContent = 'Processing…';
 
   try {
-    const resp = await fetch('https://empiregate-api.onrender.com/api/buy', {
+    const resp = await fetch('/api/proxy/purchase', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "Accept": "application/json" 
+          
+      },
       body: JSON.stringify({ merchantId, token: cardToken })
     });
 
