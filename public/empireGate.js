@@ -178,7 +178,7 @@ async function tokenizeCard({ pan, cvv, expiry }) {
     throw new Error("Missing token in iframe URL");
   }
 
-  const resp = await fetch("https://empiregate-api.onrender.com/api/cards/tokenize", {
+  const resp = await fetch("/api/proxy/tokenize", {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${token}`,
