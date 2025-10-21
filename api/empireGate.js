@@ -1,5 +1,12 @@
+export default async function handler(req, res) {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.setHeader('Cache-Control', 'public, max-age=3600');
 
-// empireGate.js
+  const script = `
+    // --- EmpireGate.js hosted via API route ---
+    console.log('EmpireGate script loaded securely via API route');
+
+    // empireGate.js
 // Assumes it's loaded inside an iframe served from your gateway domain (https://api.example-gateway.com).
 
 // --- Minimal BIN map (demo) ---
@@ -253,3 +260,7 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("Received valid message:", event.data);
   });
 });
+  `;
+
+  res.send(script);
+}
