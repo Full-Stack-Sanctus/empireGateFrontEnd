@@ -223,7 +223,7 @@ submitBtn.addEventListener('click', async (e) => {
        throw new Error("Missing token in iframe URL");
     }
   
-    const resp = await fetch('/api/proxy/detokenize', {
+    const resp = await fetch('/api/proxy/purchase', {
       method: 'POST',
       headers: { 
         "Authorization": `Bearer ${token}`,
