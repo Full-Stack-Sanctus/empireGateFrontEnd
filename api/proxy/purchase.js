@@ -1,7 +1,7 @@
 // /api/debug-proxy.js
 export default async function handler(req, res) {
   try {
-    const target = "https://empiregate-api.onrender.com/api/cards/buy";
+    const target = "https://empiregate-api.onrender.com/api/cards/detokenize";
 
     const response = await fetch(target, {
       method: req.method,
