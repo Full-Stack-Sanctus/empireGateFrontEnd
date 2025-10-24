@@ -236,7 +236,7 @@ submitBtn.addEventListener('click', async (e) => {
 
     if (!resp.ok) throw new Error('Purchase failed');
     const data = await resp.json();
-    alert('Purchase successful!');
+    alert('Purchase successful!', data);
     console.log('Buy result:', data);
   } catch (err) {
     alert('Error: ' + err.message);
