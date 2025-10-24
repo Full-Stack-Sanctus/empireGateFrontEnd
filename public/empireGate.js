@@ -211,13 +211,13 @@ cvvInput.addEventListener('input', maybeAutoTokenize);
 submitBtn.addEventListener('click', async (e) => {
   e.preventDefault();
   if (!cardToken) return alert('Card not tokenized yet');
-  if (!merchantId) return alert('Merchant ID missing');
+  // if (!merchantId) return alert('Merchant ID missing');
 
   submitBtn.disabled = true;
   submitBtn.textContent = 'Processing…';
 
   try {
-    const resp = await fetch('/api/proxy/purchase', {
+    const resp = await fetch('/api/proxy/detokenize', {
       method: 'POST',
       headers: { 
         "Authorization": `Bearer ${token}`,
@@ -225,7 +225,7 @@ submitBtn.addEventListener('click', async (e) => {
         "Accept": "application/json" 
           
       },
-      body: JSON.stringify({ merchantId, token: cardToken })
+      body: JSON.stringify({ token: cardToken })
     });
 
     if (!resp.ok) throw new Error('Purchase failed');
