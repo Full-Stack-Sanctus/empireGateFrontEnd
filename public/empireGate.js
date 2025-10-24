@@ -217,6 +217,12 @@ submitBtn.addEventListener('click', async (e) => {
   submitBtn.textContent = 'Processing…';
 
   try {
+    const token = getTokenFromUrl(); // extract merchant's token from URL
+
+    if (!token) {
+       throw new Error("Missing token in iframe URL");
+    }
+  
     const resp = await fetch('/api/proxy/detokenize', {
       method: 'POST',
       headers: { 
